@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f6f2">
+  <title>Claude — AI assistant</title>
+  <style>
+    :root {
+      --paper: #f7f6f2;
+      --paper-strong: #efeee9;
+      --ink: #262624;
+      --muted: #77756f;
+      --line: #dedcd5;
+      --accent: #d97757;
+      --accent-dark: #b85a3b;
+      --sidebar: 272px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--paper); }
+    button, textarea { font: inherit; }
+    button { color: inherit; }
+    .app { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: var(--sidebar);
+      flex: 0 0 var(--sidebar);
+      display: flex;
+      flex-direction: column;
+      padding: 22px 14px 16px;
+      border-right: 1px solid var(--line);
+      background: #f1f0eb;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px 27px; }
+    .brand-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: white; font-weight: 800; letter-spacing: -2px; }
+    .brand-name { font-family: Georgia, serif; font-size: 22px; font-weight: 700; }
+    .new-chat, .nav-button, .history-item { border: 0; background: transparent; cursor: pointer; text-align: left; }
+    .new-chat { display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 12px; border: 1px solid #d4d1c9; border-radius: 8px; background: #faf9f6; font-weight: 650; }
+    .new-chat:hover, .nav-button:hover, .history-item:hover { background: #e8e6df; }
+    .nav { display: grid; gap: 3px; margin-top: 18px; }
+    .nav-button { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 7px; color: #55534e; font-size: 14px; }
+    .nav-button.active { background: #e5e2da; color: var(--ink); font-weight: 650; }
+    .section-label { padding: 26px 12px 8px; color: #98958d; text-transform: uppercase; letter-spacing: .08em; font-size: 10px; font-weight: 700; }
+    .history { display: grid; gap: 2px; overflow: auto; }
+    .history-item { overflow: hidden; padding: 8px 12px; border-radius: 7px; color: #66635c; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-footer { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--line); }
+    .account { display: flex; align-items: center; gap: 9px; padding: 9px 10px; }
+    .avatar { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: #2e3b36; color: #fff; font-size: 12px; font-weight: 700; }
+    .account-info { min-width: 0; flex: 1; }
+    .account-name { font-size: 13px; font-weight: 650; }
+    .account-plan { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+    .main { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+    .topbar { height: 68px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; border-bottom: 1px solid var(--line); }
+    .model-select { display: flex; align-items: center; gap: 8px; border: 0; background: transparent; font-size: 14px; font-weight: 650; cursor: pointer; }
+    .model-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+    .top-actions { display: flex; gap: 6px; }
+    .icon-button { width: 35px; height: 35px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; cursor: pointer; }
+    .icon-button:hover { background: var(--paper-strong); }
+    .mobile-menu { display: none; }
+    .chat { width: min(780px, calc(100% - 48px)); flex: 1; margin: 0 auto; padding: 74px 0 160px; }
+    .welcome { text-align: center; margin-bottom: 54px; }
+    .welcome h1 { margin: 0 0 12px; font-family: Georgia, serif; font-size: clamp(34px, 5vw, 48px); font-weight: 400; letter-spacing: -.04em; }
+    .welcome p { max-width: 470px; margin: 0 auto; color: var(--muted); font-size: 15px; line-height: 1.6; }
+    .messages { display: grid; gap: 30px; }
+    .message { display: flex; gap: 14px; animation: rise .25s ease-out; }
+    .message.user { justify-content: flex-end; }
+    .message.user .bubble { max-width: 76%; padding: 12px 16px; border-radius: 17px 17px 4px 17px; background: #e8e1d7; line-height: 1.55; }
+    .message.assistant .bubble { max-width: 650px; line-height: 1.65; }
+    .message-label { margin-bottom: 5px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .assistant-mark { flex: 0 0 28px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: white; font-size: 12px; font-weight: 800; }
+    .bubble p { margin: 0 0 12px; }
+    .bubble p:last-child { margin-bottom: 0; }
+    .suggestions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 48px; }
+    .suggestion { padding: 15px 16px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.25); color: #57554f; cursor: pointer; text-align: left; font-size: 13px; }
+    .suggestion:hover { border-color: #beb8ad; background: #f1eee7; }
+    .composer-wrap { position: fixed; right: 0; bottom: 0; left: var(--sidebar); padding: 24px 24px 26px; background: linear-gradient(transparent, var(--paper) 28%); }
+    .composer { width: min(780px, 100%); margin: 0 auto; }
+    .composer-box { position: relative; padding: 13px 52px 45px 16px; border: 1px solid #c9c6bd; border-radius: 13px; background: #fbfaf7; box-shadow: 0 3px 16px rgba(40,35,25,.06); }
+    textarea { display: block; width: 100%; min-height: 28px; max-height: 150px; padding: 0; border: 0; outline: 0; resize: none; overflow-y: auto; background: transparent; color: var(--ink); line-height: 1.5; }
+    textarea::placeholder { color: #98958d; }
+    .composer-tools { position: absolute; right: 10px; bottom: 9px; left: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .tool-button { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; cursor: pointer; color: #77746c; }
+    .tool-button:hover { background: var(--paper-strong); color: var(--ink); }
+    .send-button { width: 31px; height: 31px; display: grid; place-items: center; border: 0; border-radius: 8px; background: var(--accent); color: white; cursor: pointer; }
+    .send-button:disabled { background: #d7d4cb; cursor: default; }
+    .disclaimer { margin-top: 9px; color: #a09d95; text-align: center; font-size: 11px; }
+    .typing { color: var(--muted); font-size: 14px; }
+    .typing span { display: inline-block; width: 5px; height: 5px; margin: 0 2px; border-radius: 50%; background: var(--accent); animation: pulse 1s infinite; }
+    .typing span:nth-child(2) { animation-delay: .15s; } .typing span:nth-child(3) { animation-delay: .3s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0%, 60%, 100% { opacity: .3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+    @media (max-width: 720px) {
+      .sidebar { position: fixed; z-index: 4; top: 0; bottom: 0; left: -290px; transition: left .2s ease; box-shadow: 5px 0 20px rgba(0,0,0,.1); }
+      .sidebar.open { left: 0; }
+      .topbar { padding: 0 16px; } .mobile-menu { display: grid; }
+      .chat { width: calc(100% - 32px); padding-top: 45px; }
+      .welcome { margin-bottom: 38px; } .suggestions { grid-template-columns: 1fr; margin-top: 34px; }
+      .composer-wrap { left: 0; padding: 18px 16px 20px; } .message.user .bubble { max-width: 88%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><span class="brand-mark">✦</span><span class="brand-name">Claude</span></div>
+      <button class="new-chat" id="newChat"><span>＋</span> New chat <span style="margin-left:auto;color:#999">⌘ K</span></button>
+      <nav class="nav" aria-label="Primary navigation">
+        <button class="nav-button active"><span>▱</span> Chats</button>
+        <button class="nav-button"><span>⌘</span> Projects</button>
+        <button class="nav-button"><span>☆</span> Artifacts</button>
+      </nav>
+      <div class="section-label">Recent</div>
+      <div class="history" id="history">
+        <button class="history-item">Planning a garden renovation</button>
+        <button class="history-item">Explain quantum computing</button>
+        <button class="history-item">Weekend meal ideas</button>
+      </div>
+      <div class="sidebar-footer">
+        <div class="account"><span class="avatar">RJ</span><div class="account-info"><div class="account-name">Rakesh Jadapalli</div><div class="account-plan">Free plan</div></div><span style="color:#8c8981">•••</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-button mobile-menu" id="menuButton" aria-label="Open menu">☰</button>
+        <button class="model-select"><span class="model-dot"></span> Claude 3.5 Sonnet <span style="font-size:10px">⌄</span></button>
+        <div class="top-actions"><button class="icon-button" aria-label="Search">⌕</button><button class="icon-button" aria-label="Settings">⚙</button></div>
+      </header>
+      <section class="chat" aria-live="polite">
+        <div class="welcome" id="welcome"><h1>How can I help you today?</h1><p>I'm Claude, an AI assistant. I can help you think, create, analyze, and explore ideas.</p></div>
+        <div class="messages" id="messages"></div>
+        <div class="suggestions" id="suggestions">
+          <button class="suggestion">Help me brainstorm ideas for a project</button>
+          <button class="suggestion">Explain a complex topic simply</button>
+          <button class="suggestion">Write or improve some code</button>
+          <button class="suggestion">Draft an email or document</button>
+        </div>
+      </section>
+      <div class="composer-wrap">
+        <form class="composer" id="composer">
+          <div class="composer-box"><textarea id="prompt" rows="1" placeholder="Message Claude..." aria-label="Message Claude"></textarea><div class="composer-tools"><button type="button" class="tool-button" aria-label="Attach file">＋</button><span style="color:#aaa;font-size:11px">Claude can make mistakes</span><button class="send-button" id="send" disabled aria-label="Send message">↑</button></div></div>
+          <div class="disclaimer">Your conversations are private and secure.</div>
+        </form>
+      </div>
+    </main>
+  </div>
+  <script>
+    const prompt = document.getElementById('prompt');
+    const send = document.getElementById('send');
+    const messages = document.getElementById('messages');
+    const suggestions = document.getElementById('suggestions');
+    const welcome = document.getElementById('welcome');
+
+    const replies = [
+      "That’s a great question. I can help you break this down into clear, manageable steps. Tell me a little more about what you’re hoping to achieve, and we’ll work through it together.",
+      "Here’s a thoughtful way to approach it: start by defining the outcome, then identify the constraints and the smallest useful next step. I’m happy to help with any of those pieces.",
+      "Absolutely. I’ll help you explore this carefully and turn the idea into something practical. What would you like to focus on first?"
+    ];
+
+    function addMessage(text, role) {
+      const item = document.createElement('article');
+      item.className = 'message ' + role;
+      if (role === 'assistant') {
+        item.innerHTML = '<span class="assistant-mark">✦</span><div class="bubble"><div class="message-label">Claude</div><p></p></div>';
+      } else {
+        item.innerHTML = '<div class="bubble"><p></p></div>';
+      }
+      item.querySelector('p').textContent = text;
+      messages.appendChild(item);
+      item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function submitMessage(text) {
+      const clean = text.trim();
+      if (!clean) return;
+      welcome.style.display = 'none';
+      suggestions.style.display = 'none';
+      addMessage(clean, 'user');
+      prompt.value = '';
+      prompt.style.height = 'auto';
+      send.disabled = true;
+      const typing = document.createElement('article');
+      typing.className = 'message assistant';
+      typing.innerHTML = '<span class="assistant-mark">✦</span><div class="bubble"><div class="message-label">Claude</div><div class="typing"><span></span><span></span><span></span></div></div>';
+      messages.appendChild(typing);
+      setTimeout(() => { typing.remove(); addMessage(replies[Math.floor(Math.random() * replies.length)], 'assistant'); }, 800);
+    }
+
+    prompt.addEventListener('input', () => {
+      prompt.style.height = 'auto';
+      prompt.style.height = Math.min(prompt.scrollHeight, 150) + 'px';
+      send.disabled = !prompt.value.trim();
+    });
+    document.getElementById('composer').addEventListener('submit', e => { e.preventDefault(); submitMessage(prompt.value); });
+    document.querySelectorAll('.suggestion').forEach(button => button.addEventListener('click', () => submitMessage(button.textContent)));
+    document.getElementById('newChat').addEventListener('click', () => {
+      messages.innerHTML = ''; welcome.style.display = ''; suggestions.style.display = 'grid'; prompt.focus();
+    });
+    document.getElementById('menuButton').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+  </script>
+</body>
+</html>
